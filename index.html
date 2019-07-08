@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>HackerNews Clone</title>
+  <link rel="stylesheet" href="stylesheet.css" type="text/css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+  <body>
+    <div id="container">
+      <div id="header">
+
+        <ul>
+          <li><img src="logo.gif" alt="hacker-news-logo" style="height: 23px"></li>
+          <ul>
+            <li class="header-list"><b>Hacker News</b></li>
+            <li class="header-list"><span><a href="https://news.ycombinator.com/new">new</a> | <a href="https://news.ycombinator.com/newcomments">comments</a> | <a href="https://news.ycombinator.com/show">show</a> | <a href="https://news.ycombinator.com/ask">ask</a> | <a href="https://news.ycombinator.com/jobs">jobs</a> | <a href="https://news.ycombinator.com/submit">submit</a></span></li>
+          </ul>
+        </ul>
+      <p id="login">login</p>
+      </div>
+      <div id="content">
+        <ol id=contents></ol>
+      </div>
+    </div>
+
+  <script type="text/javascript">
+    let url = `https://hacker-news.firebaseio.com/v0/`;
+    let processing
+
+    // Helper Functions
+    function createNode(element) {
+      return document.createElement(element);
+    }
+
+    const ul = document.getElementById('contents');
+
+    function append(parent, el) {
+      return parent.appendChild(el);
+    }
+
+    function cleanURL(url) {
+      if(url.match(/http:\/\//)) {
+          url = url.substring(7);
+      }
+      if(url.match(/^www\./)) {
+          url = url.substring(4);
+      }
+      return url;
+    }
+
+    // Date Formatting
+    function timeSince(date) {
+      if (typeof date !== 'object') {
+        date = new Date(date);
+      }
+      let seconds = Math.floor((new Date() - date) / 1000);
+      let intervalType;
+      let interval = Math.floor(seconds / 31536000);
+      if (interval >= 1) {
+        intervalType = 'year';
+      } else {
+        interval = Math.floor(seconds / 2592000);
+        if (interval >= 1) {
+          intervalType = 'month';
+        } else {
+          interval = Math.floor(seconds / 86400);
+          if (interval >= 1) {
+            intervalType = 'day';
+          } else {
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) {
+              intervalType = "hour";
+            } else {
+              interval = Math.floor(seconds / 60);
+              if (interval >= 1) {
+                intervalType = "minute";
+              } else {
+                interval = seconds;
+                intervalType = "second";
+              }
+            }
+          }
+        }
+      }
+
+      if (interval > 1 || interval === 0) {
+        intervalType += 's';
+      }
+
+      return interval + ' ' + intervalType;
+    };
+
+
+
+   // HMakes stories
+    function makeStory(id) {
+      fetch(url + 'item/' + id + '.json?print=pretty' + Math.random()).then(
+      function(response){
+       if (response.status !== 200) {
+        console.log('Looks like there was a problem. Status Code: ' +
+          response.status);
+        return;
+      }
+      response.json().then(function(data) {
+
+        // Create Elements
+        let li = createNode('li'),
+            lowerDiv = createNode('div'),
+            titleDiv = createNode('div'),
+            urlParse = createNode('a')
+
+        //  Title Line
+        urlParse.href = data.url
+        titleDiv.innerHTML =`<i class="fa fa-caret-up"></i> <a href='#{data.url}' class="title">${data.title}</a> (<span class="url">${cleanURL(urlParse.hostname)}</span>)`
+
+        // Lower Line
+        let date = timeSince(new Date((data.time)*1000))
+        lowerDiv.innerHTML = `<span class="info-bar">${data.score} points by ${data.by} ${date} ago | hide | <a href="https://news.ycombinator.com/item?id=${id}" class="light-gray">${data.descendants} comments</a></span>`
+
+        append(li, titleDiv)
+        append(li, lowerDiv)
+        append(ul, li)
+      });
+    })
+  };
+
+  // Refresh
+  function refresh(stories) {
+      let response = stories.splice(0, (30))
+      return response.map( id => makeStory(id));
+   };
+
+  // Autorun and Scroll listener
+  function autorun() {
+    fetch(url + 'topstories.json?print=pretty').then(
+      function(response){
+       if (response.status !== 200) {
+        console.log('Looks like there was a problem. Status Code: ' +
+          response.status);
+        return;
+      }
+      response.json().then(function(data) {
+        let bestStories = data;
+        refresh(data);
+
+        // Scroll event listner and AJAX Refresh
+        document.addEventListener("scroll", function(event) {
+          if (processing)
+              return false;
+
+          if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight){
+            processing = true;
+            refresh(bestStories)
+            bestStories.splice(0, 30)
+            setTimeout(function(){ processing = false; }, 1000);
+          };
+        });
+      });
+    })
+  };
+
+
+  // On Load
+   if (window.addEventListener) window.addEventListener("load", autorun, false);
+   else if (window.attachEvent) window.attachEvent("onload", autorun);
+   else window.onload = autorun
+
+  </script>
+  </body>
+</html>
