@@ -25,7 +25,9 @@
     </div>
 
   <script type="text/javascript">
-    let url = `https://hacker-news.firebaseio.com/v0/`;
+    let url = `https://www.graphqlhub.com/graphql?pretty=true&query={ hn { topStories(limit: 30) { id ,title,score,url , time,
+  descendants,time,timeISO, by { id }} } }`;
+
 
     // Helper Functions
     function createNode(element) {
@@ -93,16 +95,7 @@
 
 
    // HMakes stories
-    function makeStory(id) {
-      fetch(url + 'item/' + id + '.json?print=pretty' + Math.random()).then(
-      function(response){
-       if (response.status !== 200) {
-        console.log('Looks like there was a problem. Status Code: ' +
-          response.status);
-        return;
-      }
-      response.json().then(function(data) {
-
+    function makeStory(story) {
         // Create Elements
         let li = createNode('li'),
             lowerDiv = createNode('div'),
@@ -110,39 +103,31 @@
             urlParse = createNode('a')
 
         //  Title Line
-        urlParse.href = data.url
-        titleDiv.innerHTML =`<i class="fa fa-caret-up"></i> <a href='#{data.url}' class="title">${data.title}</a> (<span class="url">${cleanURL(urlParse.hostname)}</span>)`
+        urlParse.href = story.url
+        titleDiv.innerHTML =`<i class="fa fa-caret-up"></i> <a href='#${story.url}' class="title">${story.title}</a> (<span class="url">${cleanURL(urlParse.hostname)}</span>)`
 
         // Lower Line
-        let date = timeSince(new Date((data.time)*1000))
-        lowerDiv.innerHTML = `<span class="info-bar">${data.score} points by ${data.by} ${date} ago | hide | <a href="https://news.ycombinator.com/item?id=${id}" class="light-gray">${data.descendants} comments</a></span>`
+        let date = timeSince(new Date((story.time)*1000))
+        lowerDiv.innerHTML = `<span class="info-bar">${story.score} points by ${story.by.id} ${date} ago | hide | <a href="https://news.ycombinator.com/item?id=${story.id}" class="light-gray">${story.descendants} comments</a></span>`
 
         append(li, titleDiv)
         append(li, lowerDiv)
         append(ul, li)
-      });
-    })
-  };
 
-  // Refresh
-  function refresh(stories) {
-      let response = stories.splice(0, (30))
-      return response.map( id => makeStory(id));
-   };
+  }
 
   // Autorun and Scroll listener
   function autorun() {
-    fetch(url + 'topstories.json?print=pretty').then(
+    fetch(url).then(
       function(response){
        if (response.status !== 200) {
         console.log('Looks like there was a problem. Status Code: ' +
           response.status);
         return;
       }
-      response.json().then(function(data) {
-        let bestStories = data;
-        refresh(data);
-
+      response.json().then(function(_data) {
+        let topStories = _data.data.hn.topStories;
+        topStories.map( story => makeStory(story));
 
       });
     })
