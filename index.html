@@ -26,7 +26,6 @@
 
   <script type="text/javascript">
     let url = `https://hacker-news.firebaseio.com/v0/`;
-    let processing
 
     // Helper Functions
     function createNode(element) {
@@ -144,18 +143,7 @@
         let bestStories = data;
         refresh(data);
 
-        // Scroll event listner and AJAX Refresh
-        document.addEventListener("scroll", function(event) {
-          if (processing)
-              return false;
 
-          if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight){
-            processing = true;
-            refresh(bestStories)
-            bestStories.splice(0, 30)
-            setTimeout(function(){ processing = false; }, 1000);
-          };
-        });
       });
     })
   };
